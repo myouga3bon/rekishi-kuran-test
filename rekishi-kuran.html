@@ -9,9 +9,9 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="歴史空欄テスト">
+<meta name="apple-mobile-web-app-title" content="歴史マスプリ">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<title>歴史マスター空欄テスト</title>
+<title>歴史マスプリテスト</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700;900&family=Zen+Maru+Gothic:wght@700;900&display=swap" rel="stylesheet">
@@ -395,7 +395,7 @@
 <!-- ===== トップ（範囲選択） ===== -->
 <section id="screen-setup">
   <div class="ui-panel">
-    <div class="ui-header-main round">🌸 学習空間 歴史マスターテスト（空欄式） 🌸</div>
+    <div class="ui-header-main round">🌸 学習空間 歴史マスプリテスト 🌸</div>
 
     <div class="action-section">
       <div class="opt-box">
@@ -412,6 +412,13 @@
           <input type="radio" name="tLimit" id="tl0" value="0" checked><label for="tl0">マイペース</label>
           <input type="radio" name="tLimit" id="tl30" value="30"><label for="tl30">30秒</label>
           <input type="radio" name="tLimit" id="tl20" value="20"><label for="tl20">20秒</label>
+        </div>
+      </div>
+      <div class="opt-box">
+        <div class="opt-title">出題順</div>
+        <div class="seg">
+          <input type="radio" name="qOrder" id="qoRand" value="random" checked><label for="qoRand">ランダム</label>
+          <input type="radio" name="qOrder" id="qoSeq" value="seq"><label for="qoSeq">順通り</label>
         </div>
       </div>
       <div class="side-row">
@@ -457,7 +464,7 @@
 <section id="screen-sheet" hidden>
   <div class="sheet-shell">
     <div class="sheet-head">
-      <h2 class="sheet-title" id="sheetTitle">歴史マスターテスト（空欄式）</h2>
+      <h2 class="sheet-title" id="sheetTitle">歴史マスプリテスト</h2>
       <div class="sheet-meta" id="sheetMeta"></div>
     </div>
     <div class="weak-box" id="weakBox" hidden></div>
@@ -550,7 +557,7 @@ const $ = id => document.getElementById(id);
 // 全問題に通し番号をつける
 const ALL = [];
 function hashKey(str){ let h = 0x811c9dc5; for(let i = 0; i < str.length; i++){ h ^= str.charCodeAt(i); h = Math.imul(h, 0x01000193) >>> 0; } return 'q' + h.toString(36); }
-Object.keys(rawData).forEach(id => rawData[id].forEach(m => ALL.push(Object.assign({key: hashKey(eraNames[id] + '|' + m.q + '|' + m.a), era: +id}, m))));
+Object.keys(rawData).forEach(id => rawData[id].forEach(m => ALL.push(Object.assign({key: hashKey(eraNames[id] + '|' + m.q + '|' + m.a), era: +id, idx: ALL.length}, m))));
 const BY_KEY = Object.fromEntries(ALL.map(x => [x.key, x]));
 
 function shuffle(a){ for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
@@ -685,12 +692,14 @@ function startTimer(total){
 
 function startSheet(setup, fixedItems){
   actx();
-  const items = fixedItems || shuffle(setup.pool.slice()).slice(0, Math.min(setup.count, setup.pool.length));
+  // 順通り：元データの出現順に先頭から／ランダム：まぜて選ぶ
+  const ordered = setup.order === 'seq' ? setup.pool.slice().sort((a, b) => a.idx - b.idx) : shuffle(setup.pool.slice());
+  const items = fixedItems || ordered.slice(0, Math.min(setup.count, setup.pool.length));
   S = {setup, items, wrong: new Set(), shown: false, recId: null, retry: !!fixedItems, timeUp: false};
   lastSetup = setup;
   if(setup.fromNote){ S.retry = false; S.fromNote = true; }
-  $('sheetTitle').textContent = S.fromNote ? 'まちがいノートからテスト' : (S.retry ? '間違い直し' : '歴史マスターテスト（空欄式）');
-  $('sheetMeta').innerHTML = `範囲：<b>${esc(setup.range)}</b>　｜　<b>${items.length}</b>問　｜　${limitLabel(setup.limit)}`;
+  $('sheetTitle').textContent = S.fromNote ? 'まちがいノートからテスト' : (S.retry ? '間違い直し' : '歴史マスプリテスト');
+  $('sheetMeta').innerHTML = `範囲：<b>${esc(setup.range)}</b>　｜　<b>${items.length}</b>問　｜　${limitLabel(setup.limit)}${setup.order === 'seq' && !fixedItems ? '　｜　順通り' : ''}`;
   // 間違い直しのときは、苦手な時代の円グラフ
   const wb = $('weakBox');
   if(S.retry || S.fromNote){ renderWeak(items, wb, S.fromNote ? 'ノートから出した問題の時代の割合' : ''); wb.hidden = false; } else { wb.hidden = true; wb.innerHTML = ''; }
@@ -731,7 +740,8 @@ function goClick(b){
   startSheet({
     pool, eras, range: rangeLabelOf(eras),
     count: +document.querySelector('input[name=qCount]:checked').value,
-    limit: +document.querySelector('input[name=tLimit]:checked').value
+    limit: +document.querySelector('input[name=tLimit]:checked').value,
+    order: document.querySelector('input[name=qOrder]:checked').value
   });
 }
 $('btnGo').addEventListener('click', () => goClick($('btnGo')));
@@ -835,7 +845,7 @@ $('retryWrongBtn').addEventListener('click', () => {
   if(!wrong.length){
     const b = $('retryWrongBtn'); b.textContent = '先に、まちがえた番号を押してね'; setTimeout(() => updScore(), 1800); return;
   }
-  startSheet(Object.assign({}, S.setup, {fromNote: false}), shuffle(wrong.slice()));
+  startSheet(Object.assign({}, S.setup, {fromNote: false}), S.setup.order === 'seq' ? wrong.slice().sort((a, b) => a.idx - b.idx) : shuffle(wrong.slice()));
 });
 $('retryBtn').addEventListener('click', () => { if(lastSetup) startSheet(lastSetup); });
 $('backBtn').addEventListener('click', () => { show('setup'); updatePoolInfo(); });

@@ -1,5 +1,5 @@
-// 歴史マスター空欄テスト：オフラインでも開けるようにするサービスワーカー
-const CACHE = 'rekishi-kuran-v2';
+// 歴史マスプリテスト：オフラインでも開けるようにするサービスワーカー
+const CACHE = 'rekishi-kuran-v3';
 const SHELL = ['./rekishi-kuran.html', './manifest.json', './icon-192.png', './icon-512.png', './apple-touch-icon.png'];
 self.addEventListener('install', e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)).then(() => self.skipWaiting())); });
 self.addEventListener('activate', e => {

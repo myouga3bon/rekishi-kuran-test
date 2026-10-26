@@ -1,6 +1,6 @@
 {
-  "name": "学習空間 歴史マスター空欄テスト",
-  "short_name": "歴史空欄テスト",
+  "name": "学習空間 歴史マスプリテスト",
+  "short_name": "歴史マスプリ",
   "start_url": "./rekishi-kuran.html",
   "scope": "./",
   "display": "standalone",

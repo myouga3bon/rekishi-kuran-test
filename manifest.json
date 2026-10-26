@@ -1,0 +1,28 @@
+{
+  "name": "学習空間 歴史マスター空欄テスト",
+  "short_name": "歴史空欄テスト",
+  "start_url": "./rekishi-kuran.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#fffcfd",
+  "theme_color": "#ad1457",
+  "lang": "ja",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

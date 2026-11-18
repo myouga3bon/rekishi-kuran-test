@@ -186,6 +186,15 @@
   .shell.wide{max-width:980px;}
   .note-open{border-style:solid; border-color:#9cc7ef; background:#f3f9ff; color:#2f6d9e;}
   .note-open #noteCount{font-variant-numeric:tabular-nums;}
+  /* まちがいリスト：本日（オレンジ）／すべて（青） */
+  .miss-box{border:1.5px solid var(--border-soft); border-radius:12px; padding:6px 6px 7px; background:#fff;}
+  .miss-head{font-size:12.5px; font-weight:900; color:var(--accent); text-align:center; margin-bottom:5px;}
+  .miss-btn{flex:1 1 0; min-width:0; display:flex; flex-direction:column; align-items:center; gap:0; padding:6px 2px; border-radius:10px; cursor:pointer; font:inherit; line-height:1.2; white-space:nowrap;}
+  .miss-btn .mb-ic{font-size:16px;}
+  .miss-btn .mb-t{font-size:15px; font-weight:900;}
+  .miss-btn .mb-n{font-size:11px; font-weight:700; font-variant-numeric:tabular-nums;}
+  .miss-btn.today{border:2px solid #f08c2e; background:#fff3e3; color:#c25e00;}
+  .miss-btn.all{border:2px solid #4a8fd4; background:#eaf3fc; color:#24639f;}
   .side-row.mini .install-open{flex:1 1 0; min-width:0; width:auto; white-space:nowrap; padding:6px 2px; font-size:12px;}
   .install-open{width:100%; padding:8px; border-radius:12px; border:1.5px solid var(--border-soft); background:#fff; color:var(--ink-soft); font-weight:700; font-size:12.5px; cursor:pointer;}
   .note-actions{display:flex; flex-wrap:wrap; gap:10px; margin:14px 0 4px;}
@@ -215,7 +224,10 @@
   .note-tabs{display:grid; grid-template-columns:1fr 1fr; gap:8px; margin:14px 0 4px;}
   .note-tabs button{font:inherit; font-size:15px; font-weight:900; padding:10px 8px; border-radius:12px; cursor:pointer;
     border:2px solid #9cc7ef; background:#f3f9ff; color:#2f6d9e;}
-  .note-tabs button[aria-selected="true"]{background:var(--accent); border-color:var(--accent); color:#fff;}
+  #tabToday{border-color:#f08c2e; background:#fff3e3; color:#c25e00;}
+  #tabAll{border-color:#4a8fd4; background:#eaf3fc; color:#24639f;}
+  #tabToday[aria-selected="true"]{background:#f08c2e; color:#fff;}
+  #tabAll[aria-selected="true"]{background:#4a8fd4; color:#fff;}
   .note-tabs button small{display:block; font-size:12px; font-weight:700;}
   /* 時代別の棒グラフ */
   .bar-box{padding:14px 16px; border-radius:14px; background:#fff; border:2px solid var(--primary); margin-top:12px;}
@@ -480,9 +492,12 @@
       </div>
       <div class="pool-info" id="poolInfo"></div>
       <button type="button" class="make-btn round" id="btnGo">テスト開始！</button>
-      <div class="side-row two">
-        <button type="button" class="report-open note-open" id="btnNote">📒 まちがいリスト<span id="todayCount"></span></button>
-        <button type="button" class="report-open note-open" id="btnNoteAll">📚 これまでリスト<span id="noteCount"></span></button>
+      <div class="miss-box">
+        <div class="miss-head">まちがいリスト</div>
+        <div class="side-row two">
+          <button type="button" class="miss-btn today" id="btnNote"><span class="mb-t">本日</span><span class="mb-n" id="todayCount"></span></button>
+          <button type="button" class="miss-btn all" id="btnNoteAll"><span class="mb-t">すべて</span><span class="mb-n" id="noteCount"></span></button>
+        </div>
       </div>
       <div class="side-row mini">
         <button type="button" class="install-open" id="btnInstall" hidden>📲 ホーム画面に追加</button>
@@ -555,10 +570,10 @@
 <section id="screen-note" hidden>
   <div class="shell wide">
     <div class="card">
-      <h2 class="rep-title" id="noteTitle">📒 まちがいリスト</h2>
+      <h2 class="rep-title" id="noteTitle">まちがいリスト</h2>
       <div class="note-tabs" role="tablist" aria-label="リストの切りかえ">
-        <button type="button" role="tab" id="tabToday" data-tab="today" aria-selected="true">まちがいリスト（今日）<small id="tabTodayN"></small></button>
-        <button type="button" role="tab" id="tabAll" data-tab="all" aria-selected="false">これまでリスト<small id="tabAllN"></small></button>
+        <button type="button" role="tab" id="tabToday" data-tab="today" aria-selected="true">本日<small id="tabTodayN"></small></button>
+        <button type="button" role="tab" id="tabAll" data-tab="all" aria-selected="false">すべて<small id="tabAllN"></small></button>
       </div>
       <p class="rep-hint" id="noteHint"></p>
       <div id="noteSummary"></div>
@@ -944,8 +959,8 @@ function applyNote(){
 }
 function updNoteCount(){
   const n = Object.keys(loadNote()).filter(k => BY_KEY[k]).length;
-  $('noteCount').textContent = n ? `（${n}問）` : '';
-  const tn = todayItems().length; $('todayCount').textContent = tn ? `（今日${tn}問）` : '（今日）';
+  $('noteCount').textContent = `これまで ${n}問`;
+  const tn = todayItems().length; $('todayCount').textContent = `今日 ${tn}問`;
   paintEraHeat();
 }
 // 時代名の色：水色（ミスなし）→赤（自分のまちがいリストのミス回数が多い時代）
@@ -1020,14 +1035,14 @@ function openNote(keepScroll){
   const allItems = noteItems(), tItems = todayItems();
   if(!noteTab) noteTab = tItems.length ? 'today' : 'all';
   const isToday = noteTab === 'today';
-  $('noteTitle').textContent = isToday ? '📒 まちがいリスト（今日の分）' : '📚 これまでリスト';
+  $('noteTitle').textContent = isToday ? 'まちがいリスト（本日）' : 'まちがいリスト（すべて）';
   $('tabTodayN').textContent = `（${tItems.length}問）`;
   $('tabAllN').textContent = `（${allItems.length}問）`;
   ['tabToday', 'tabAll'].forEach(id => $(id).setAttribute('aria-selected', $(id).dataset.tab === noteTab));
   $('noteHint').textContent = isToday
     ? '今日のテストで✓をつけた問題です。まちがえた回数の多い順にならびます。'
     : 'これまでに✓をつけた問題が、この端末に記録されています。まちがえた回数ランキング順にならびます。3回続けて正解したら「覚えた！」で消しましょう。';
-  $('noteTestBtn').textContent = isToday ? 'まちがいリストからテスト' : 'これまでリストからテスト';
+  $('noteTestBtn').textContent = isToday ? '本日のまちがいからテスト' : 'すべてのまちがいからテスト';
   $('noteClearBtn').parentNode.hidden = isToday;
   const items = (isToday ? tItems : allItems);
   // ランキング（同じ回数は同じ順位）

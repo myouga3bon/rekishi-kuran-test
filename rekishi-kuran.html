@@ -186,6 +186,7 @@
   .shell.wide{max-width:980px;}
   .note-open{border-style:solid; border-color:#9cc7ef; background:#f3f9ff; color:#2f6d9e;}
   .note-open #noteCount{font-variant-numeric:tabular-nums;}
+  .side-row.mini .install-open{flex:1 1 0; min-width:0; width:auto; white-space:nowrap; padding:6px 2px; font-size:12px;}
   .install-open{width:100%; padding:8px; border-radius:12px; border:1.5px solid var(--border-soft); background:#fff; color:var(--ink-soft); font-weight:700; font-size:12.5px; cursor:pointer;}
   .note-actions{display:flex; flex-wrap:wrap; gap:10px; margin:14px 0 4px;}
   .note-actions .btn{flex:1 1 200px;}
@@ -479,12 +480,13 @@
       </div>
       <div class="pool-info" id="poolInfo"></div>
       <button type="button" class="make-btn round" id="btnGo">テスト開始！</button>
-      <button type="button" class="report-open" id="btnReport">📋 報告用まとめ</button>
       <div class="side-row two">
         <button type="button" class="report-open note-open" id="btnNote">📒 まちがいリスト<span id="todayCount"></span></button>
         <button type="button" class="report-open note-open" id="btnNoteAll">📚 これまでリスト<span id="noteCount"></span></button>
       </div>
-      <button type="button" class="install-open" id="btnInstall" hidden>📲 スマホのホーム画面に追加</button>
+      <div class="side-row mini">
+        <button type="button" class="install-open" id="btnInstall" hidden>📲 ホーム画面に追加</button>
+      </div>
     </div>
 
     <div class="setting-section">
@@ -1197,7 +1199,6 @@ function openReport(){
   show('report');
 }
 $('studentName').addEventListener('input', e => { try{ localStorage.setItem(NAME_KEY, e.target.value); }catch(err){} });
-$('btnReport').addEventListener('click', openReport);
 $('repBackBtn').addEventListener('click', () => { show('setup'); updatePoolInfo(); });
 
 /* ---------- スマホのホーム画面に追加（PWA） ---------- */

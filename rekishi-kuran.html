@@ -210,6 +210,27 @@
   .sort-seg button{font:inherit; font-size:13px; font-weight:700; padding:6px 14px; border:none; background:#e6f2fd; color:#2f6d9e; cursor:pointer;}
   .sort-seg button + button{border-left:1.5px solid #9cc7ef;}
   .sort-seg button[aria-pressed="true"]{background:var(--accent); color:#fff;}
+  /* 今日／これまでのタブ */
+  .note-tabs{display:grid; grid-template-columns:1fr 1fr; gap:8px; margin:14px 0 4px;}
+  .note-tabs button{font:inherit; font-size:15px; font-weight:900; padding:10px 8px; border-radius:12px; cursor:pointer;
+    border:2px solid #9cc7ef; background:#f3f9ff; color:#2f6d9e;}
+  .note-tabs button[aria-selected="true"]{background:var(--accent); border-color:var(--accent); color:#fff;}
+  .note-tabs button small{display:block; font-size:12px; font-weight:700;}
+  /* 時代別の棒グラフ */
+  .bar-box{padding:14px 16px; border-radius:14px; background:#fff; border:2px solid var(--primary); margin-top:12px;}
+  .bar-msg{margin:0; font-family:'Zen Maru Gothic',sans-serif; font-weight:900; font-size:clamp(18px,5.2vw,24px); color:var(--ng); line-height:1.35;}
+  .bar-sub{margin:4px 0 10px; font-size:12px; color:var(--ink-soft);}
+  .bars{list-style:none; margin:0; padding:0; display:grid; grid-template-columns:max-content minmax(0,1fr) max-content; gap:5px 8px; align-items:center; font-size:12.5px;}
+  .bars li{display:contents;}
+  .bars .bn{font-weight:700; color:var(--ink-soft); white-space:nowrap;}
+  .bars .bt{height:16px; border-radius:0 6px 6px 0; background:var(--surface-alt);}
+  .bars .bf{height:100%; min-width:3px; border-radius:0 6px 6px 0; background:#7fb4e6;}
+  .bars .bv{color:var(--ink-soft); font-variant-numeric:tabular-nums; white-space:nowrap; text-align:right;}
+  .bars li.top .bn{color:var(--ng);}
+  .bars li.top .bf{background:var(--ng);}
+  .bars li.top .bv{color:var(--ng); font-weight:900;}
+  .rk{display:inline-block; min-width:2.6em; text-align:center; font-size:11px; font-weight:900; color:#fff; background:#b9a2ac; border-radius:99px; padding:1px 6px; margin-bottom:3px;}
+  .rk.r1{background:#e2a400;} .rk.r2{background:#9aa5b1;} .rk.r3{background:#c58a5a;}
   table.list tr.era-group td{background:var(--secondary); color:var(--accent); font-weight:900; font-size:13px; padding:6px 10px;}
   @media (max-width:600px){
     #noteList table.list thead{display:none;}
@@ -537,9 +558,13 @@
   <div class="shell wide">
     <div class="card">
       <h2 class="rep-title">📒 自分のまちがいリスト</h2>
-      <p class="rep-hint">✓をつけた問題が、この端末に自動で記録されます。リストから出題して、3回続けて正解したら「覚えた！」で消しましょう。</p>
+      <div class="note-tabs" role="tablist" aria-label="リストの切りかえ">
+        <button type="button" role="tab" id="tabToday" data-tab="today" aria-selected="true">今日のリスト<small id="tabTodayN"></small></button>
+        <button type="button" role="tab" id="tabAll" data-tab="all" aria-selected="false">これまでリスト<small id="tabAllN"></small></button>
+      </div>
+      <p class="rep-hint" id="noteHint"></p>
       <div id="noteSummary"></div>
-      <div class="weak-box" id="noteWeak" hidden></div>
+      <div class="bar-box" id="noteWeak" hidden></div>
       <div class="note-actions">
         <button type="button" class="btn primary" id="noteTestBtn">リストからテスト</button>
         <button type="button" class="btn" id="noteBackBtn">トップにもどる</button>
@@ -960,51 +985,114 @@ function noteItems(){
   const note = loadNote();
   return Object.entries(note).filter(([k]) => BY_KEY[k]).map(([k, v]) => Object.assign({m: BY_KEY[k]}, v));
 }
-let noteSort = 'miss';
+// 「あなたは○○がよわい！」で使う時代名
+const WEAK_NAME = {1:'世界の文明',2:'縄文時代',3:'弥生時代',4:'飛鳥時代',5:'奈良時代',6:'平安時代（前期）',7:'平安時代（後期）',8:'鎌倉時代',9:'南北朝時代',10:'室町時代',11:'戦国時代',12:'安土桃山時代',13:'江戸時代（前期）',14:'江戸時代（中期）',15:'江戸時代（後期）',16:'明治時代（前期）',17:'明治時代（後期）',18:'大正時代',19:'昭和時代（戦前）',20:'昭和時代（戦中）',21:'昭和時代（戦後）',22:'平成時代'};
+const barLabel = id => (UNIT_LABEL[id] || eraNames[id]).replace(/^[①-⑳㉑-㉟]/, '');
+// 時代別の棒グラフ（まちがえた回数の合計。時代順にならべ、いちばん多い時代を赤で）
+function renderBars(items, box, who){
+  const cnt = {};
+  items.forEach(x => { cnt[x.m.era] = (cnt[x.m.era] || 0) + x.n; });
+  const ids = Object.keys(eraNames).map(Number).sort((p, q) => p - q);
+  const used = ids.filter(id => cnt[id]);
+  const show = used;   // まちがえた時代だけを、時代順に
+  const max = Math.max(...used.map(id => cnt[id]));
+  const tops = used.filter(id => cnt[id] === max);
+  const total = items.reduce((t, x) => t + x.n, 0);
+  box.innerHTML =
+    `<p class="bar-msg">${who}は${tops.slice(0, 3).map(id => WEAK_NAME[id]).join('と')}${tops.length > 3 ? 'など' : ''}がよわい！</p>` +
+    `<p class="bar-sub">時代ごとの、まちがえた回数（合計 ${total}回）</p><ul class="bars">` +
+    show.map(id => { const c = cnt[id] || 0;
+      return `<li class="${c === max ? 'top' : ''}${c ? '' : ' zero'}" title="${esc(eraNames[id])}　${c}回"><span class="bn">${esc(barLabel(id))}</span>` +
+        `<span class="bt"><span class="bf" style="display:block;width:${c ? Math.max(2, c / max * 100) : 0}%"></span></span><span class="bv">${c}回</span></li>`; }).join('') +
+    `</ul>`;
+  box.hidden = false;
+}
+// 今日まちがえた問題（今日のテスト記録から集計）
+function todayItems(){
+  const today = dateStr(new Date()), agg = {};
+  loadHist().filter(r => r.date === today).forEach(r => (r.miss || []).forEach(x => { agg[x.k] = (agg[x.k] || 0) + (x.n || 1); }));
+  return Object.entries(agg).filter(([k]) => BY_KEY[k]).map(([k, n]) => ({m: BY_KEY[k], n}));
+}
+let noteSort = 'miss', noteTab = null;
 try{ noteSort = localStorage.getItem('rekishiKuranNoteSort') || 'miss'; }catch(e){}
+if(noteSort !== 'era') noteSort = 'miss';
 function openNote(keepScroll){
-  const byMiss = (a, b) => b.n - a.n || (a.ok || 0) - (b.ok || 0) || a.m.era - b.m.era;
-  const items = noteItems().sort(noteSort === 'era' ? ((a, b) => a.m.era - b.m.era || byMiss(a, b)) : byMiss);
+  const byMiss = (a, b) => b.n - a.n || (a.ok || 0) - (b.ok || 0) || a.m.era - b.m.era || a.m.idx - b.m.idx;
+  const allItems = noteItems(), tItems = todayItems();
+  if(!noteTab) noteTab = tItems.length ? 'today' : 'all';
+  const isToday = noteTab === 'today';
+  $('tabTodayN').textContent = `（${tItems.length}問）`;
+  $('tabAllN').textContent = `（${allItems.length}問）`;
+  ['tabToday', 'tabAll'].forEach(id => $(id).setAttribute('aria-selected', $(id).dataset.tab === noteTab));
+  $('noteHint').textContent = isToday
+    ? '今日のテストで✓をつけた問題です。まちがえた回数の多い順にならびます。'
+    : 'これまでに✓をつけた問題が、この端末に記録されています。まちがえた回数ランキング順にならびます。3回続けて正解したら「覚えた！」で消しましょう。';
+  $('noteTestBtn').textContent = isToday ? '今日のリストからテスト' : 'これまでリストからテスト';
+  $('noteClearBtn').parentNode.hidden = isToday;
+  const items = (isToday ? tItems : allItems);
+  // ランキング（同じ回数は同じ順位）
+  items.sort(byMiss);
+  items.forEach((x, i) => { x.rank = i && items[i - 1].n === x.n ? items[i - 1].rank : i + 1; });
+  if(noteSort === 'era') items.sort((a, b) => a.m.era - b.m.era || byMiss(a, b));
   const sum = $('noteSummary'), lst = $('noteList'), weak = $('noteWeak');
   lst.innerHTML = '';
   if(!items.length){
-    sum.innerHTML = '<p class="empty">まだ記録はありません。テストで✓をつけた問題がここにたまります。</p>' +
-      (lastCleared && Object.keys(lastCleared).length ? '<p class="empty" style="padding-top:0"><button type="button" class="btn" id="undoAllGot">↩ 「すべて覚えた」を取り消す</button></p>' : '');
+    sum.innerHTML = (isToday
+      ? '<p class="empty">今日はまだ、まちがえた問題がありません。テストで✓をつけた問題がここに出ます。</p>'
+      : '<p class="empty">まだ記録はありません。テストで✓をつけた問題がここにたまります。</p>') +
+      (!isToday && lastCleared && Object.keys(lastCleared).length ? '<p class="empty" style="padding-top:0"><button type="button" class="btn" id="undoAllGot">↩ 「すべて覚えた」を取り消す</button></p>' : '');
     if($('undoAllGot')) $('undoAllGot').addEventListener('click', () => { saveNote(lastCleared); lastCleared = null; openNote(); });
     weak.hidden = true; $('noteTestBtn').disabled = true;
-    show('note'); return;
+    if(keepScroll){ const y = window.scrollY; show('note'); window.scrollTo(0, y); } else show('note');
+    return;
   }
   $('noteTestBtn').disabled = false;
-  const ready = items.filter(x => (x.ok || 0) >= 3).length;
-  sum.innerHTML = `<div class="stat-grid">` +
-    `<div class="stat"><b>${items.length}</b><span>記録している問題</span></div>` +
-    `<div class="stat"><b>${items.reduce((s, x) => s + x.n, 0)}</b><span>まちがえた回数（合計）</span></div>` +
-    `<div class="stat"><b>${items.filter(x => x.n >= 2).length}</b><span>2回以上まちがえた</span></div>` +
-    `<div class="stat"><b>${ready}</b><span>3回連続正解（覚えた候補）</span></div></div>`;
-  renderWeak(items.map(x => x.m), weak, '自分のまちがいリストの時代の割合'); weak.hidden = false;
+  const totalN = items.reduce((s, x) => s + x.n, 0);
+  sum.innerHTML = isToday
+    ? `<div class="stat-grid">` +
+      `<div class="stat"><b>${items.length}</b><span>今日まちがえた問題</span></div>` +
+      `<div class="stat"><b>${totalN}</b><span>まちがえた回数（合計）</span></div>` +
+      `<div class="stat"><b>${items.filter(x => x.n >= 2).length}</b><span>今日2回以上まちがえた</span></div>` +
+      `<div class="stat"><b>${new Set(items.map(x => x.m.era)).size}</b><span>時代の数</span></div></div>`
+    : `<div class="stat-grid">` +
+      `<div class="stat"><b>${items.length}</b><span>記録している問題</span></div>` +
+      `<div class="stat"><b>${totalN}</b><span>まちがえた回数（合計）</span></div>` +
+      `<div class="stat"><b>${items.filter(x => x.n >= 2).length}</b><span>2回以上まちがえた</span></div>` +
+      `<div class="stat"><b>${items.filter(x => (x.ok || 0) >= 3).length}</b><span>3回連続正解（覚えた候補）</span></div></div>`;
+  renderBars(items, weak, isToday ? '今日のあなた' : 'あなた');
   const w = document.createElement('div'); w.className = 'tbl-wrap';
   const t = document.createElement('table'); t.className = 'list';
-  t.innerHTML = '<thead><tr><th>時代</th><th>問題</th><th>答え</th><th>ミス</th><th>連続正解</th><th>最後のミス</th><th></th></tr></thead>';
+  const cols = isToday ? 4 : 7;
+  t.innerHTML = isToday
+    ? '<thead><tr><th>順位・時代</th><th>問題</th><th>答え</th><th>今日のミス</th></tr></thead>'
+    : '<thead><tr><th>順位・時代</th><th>問題</th><th>答え</th><th>ミス</th><th>連続正解</th><th>最後のミス</th><th></th></tr></thead>';
   const tb = document.createElement('tbody');
   let lastEra = null;
   items.forEach(x => {
     if(noteSort === 'era' && x.m.era !== lastEra){
       lastEra = x.m.era;
       const g = document.createElement('tr'); g.className = 'era-group';
-      const td = document.createElement('td'); td.colSpan = 7;
-      td.textContent = `${eraNames[x.m.era]}　${items.filter(y => y.m.era === x.m.era).length}問`;
+      const td = document.createElement('td'); td.colSpan = cols;
+      const inEra = items.filter(y => y.m.era === x.m.era);
+      td.textContent = `${eraNames[x.m.era]}　${inEra.length}問・${inEra.reduce((s, y) => s + y.n, 0)}回`;
       g.appendChild(td); tb.appendChild(g);
     }
     const tr = document.createElement('tr');
-    const ok = Math.min(3, x.ok || 0);
-    tr.innerHTML = `<td class="era"></td><td class="q"></td><td class="a"></td><td class="n">${x.n}回</td>` +
-      `<td class="ok3" title="${x.ok || 0}回連続正解">${'●'.repeat(ok)}${'○'.repeat(3 - ok)}</td><td class="last">${(x.last || '').slice(5).replace('-', '/')}</td>` +
-      `<td><button type="button" class="got-btn${ok >= 3 ? ' ready' : ''}">覚えた！</button></td>`;
-    tr.children[0].textContent = eraShortNames[x.m.era];
+    const rk = `<span class="rk${x.rank <= 3 ? ' r' + x.rank : ''}">${x.rank}位</span><br>`;
+    if(isToday){
+      tr.innerHTML = `<td class="era">${rk}<span class="en"></span></td><td class="q"></td><td class="a"></td><td class="n">${x.n}回</td>`;
+    } else {
+      const ok = Math.min(3, x.ok || 0);
+      tr.innerHTML = `<td class="era">${rk}<span class="en"></span></td><td class="q"></td><td class="a"></td><td class="n">${x.n}回</td>` +
+        `<td class="ok3" title="${x.ok || 0}回連続正解">${'●'.repeat(ok)}${'○'.repeat(3 - ok)}</td><td class="last">${(x.last || '').slice(5).replace('-', '/')}</td>` +
+        `<td><button type="button" class="got-btn${ok >= 3 ? ' ready' : ''}">覚えた！</button></td>`;
+    }
+    tr.querySelector('.en').textContent = eraShortNames[x.m.era];
     tr.children[1].textContent = x.m.q.replace(/\n/g, ' ');
     tr.children[2].textContent = x.m.a.replace(/\n/g, ' ');
     tr.dataset.key = x.m.key;
-    tr.querySelector('.got-btn').addEventListener('click', () => {
+    const gb = tr.querySelector('.got-btn');
+    if(gb) gb.addEventListener('click', () => {
       // 押した行のすぐ下の行を目印にして、消したあとも画面の位置がずれないようにする
       let nx = tr.nextElementSibling; while(nx && !nx.dataset.key) nx = nx.nextElementSibling;
       let pv = tr.previousElementSibling; while(pv && !pv.dataset.key) pv = pv.previousElementSibling;
@@ -1019,32 +1107,35 @@ function openNote(keepScroll){
   });
   t.appendChild(tb); w.appendChild(t);
   const head = document.createElement('div'); head.className = 'note-list-head';
-  head.innerHTML = `<p class="h3">記録している問題</p><div class="sort-seg" role="group" aria-label="ならべかた">` +
-    `<button type="button" data-sort="miss" aria-pressed="${noteSort === 'miss'}">ミスが多い順</button>` +
-    `<button type="button" data-sort="era" aria-pressed="${noteSort === 'era'}">時代ごと</button></div>`;
+  head.innerHTML = `<p class="h3">${isToday ? '今日まちがえた問題' : 'これまでまちがえた問題'}</p><div class="sort-seg" role="group" aria-label="ならべかた">` +
+    `<button type="button" data-sort="miss" aria-pressed="${noteSort === 'miss'}">回数ランキング順</button>` +
+    `<button type="button" data-sort="era" aria-pressed="${noteSort === 'era'}">時代順</button></div>`;
   head.querySelectorAll('button').forEach(b => b.addEventListener('click', () => {
     noteSort = b.dataset.sort; try{ localStorage.setItem('rekishiKuranNoteSort', noteSort); }catch(e){}
-    const y = window.scrollY; openNote(); window.scrollTo(0, y);
+    openNote(true);
   }));
   lst.appendChild(head); lst.appendChild(w);
-  const all = document.createElement('div'); all.className = 'all-got';
-  all.innerHTML = `<button type="button" class="btn all-got-btn">🎉 すべて覚えた！（${items.length}問）</button>`;
-  all.querySelector('button').addEventListener('click', () => { lastCleared = loadNote(); saveNote({}); openNote(); });
-  lst.appendChild(all);
+  if(!isToday){
+    const all = document.createElement('div'); all.className = 'all-got';
+    all.innerHTML = `<button type="button" class="btn all-got-btn">🎉 すべて覚えた！（${items.length}問）</button>`;
+    all.querySelector('button').addEventListener('click', () => { lastCleared = loadNote(); saveNote({}); openNote(); });
+    lst.appendChild(all);
+  }
   if(keepScroll){ const y = window.scrollY; show('note'); window.scrollTo(0, y); } else show('note');
 }
+['tabToday', 'tabAll'].forEach(id => $(id).addEventListener('click', () => { noteTab = $(id).dataset.tab; openNote(true); }));
 let lastCleared = null;
-$('btnNote').addEventListener('click', () => { lastCleared = null; openNote(); });
+$('btnNote').addEventListener('click', () => { lastCleared = null; noteTab = null; openNote(); });
 $('noteBackBtn').addEventListener('click', () => { show('setup'); updatePoolInfo(); });
 $('noteTestBtn').addEventListener('click', () => {
-  const items = noteItems();
+  const items = noteTab === 'today' ? todayItems() : noteItems();
   if(!items.length) return;
   // ミスが多い問題・連続正解が少ない問題を優先
   items.sort((a, b) => (b.n - (b.ok || 0)) - (a.n - (a.ok || 0)) || Math.random() - .5);
   const count = +document.querySelector('input[name=qCount]:checked').value;
   const pick = shuffle(items.slice(0, count).map(x => x.m));
   const eras = Array.from(new Set(pick.map(m => m.era))).sort((a, b) => a - b);
-  startSheet({pool: pick, eras, range: 'まちがいリスト', count, limit: +document.querySelector('input[name=tLimit]:checked').value, fromNote: true}, pick);
+  startSheet({pool: pick, eras, range: noteTab === 'today' ? '今日のまちがいリスト' : 'これまでのまちがいリスト', count, limit: +document.querySelector('input[name=tLimit]:checked').value, fromNote: true}, pick);
 });
 $('noteClearBtn').addEventListener('click', () => {
   const b = $('noteClearBtn');

@@ -54,7 +54,7 @@
   .seg{display:flex; gap:4px; justify-content:center; flex-wrap:wrap;}
   .seg input{position:absolute; opacity:0; width:1px; height:1px; pointer-events:none;}
   .seg label{
-    flex:1 1 0; min-width:44px; padding:7px 2px; border-radius:9px; border:1.5px solid var(--border);
+    flex:1 1 0; min-width:44px; padding:3.5px 2px; border-radius:9px; border:1.5px solid var(--border);
     background:#fff; color:var(--accent); font-size:14px; font-weight:700; cursor:pointer; user-select:none; white-space:nowrap;
   }
   .seg input:checked + label{background:var(--accent); border-color:var(--accent); color:#fff;}
@@ -258,13 +258,13 @@
   .all-got{margin:18px 0 4px; text-align:center;}
   .all-got-btn{width:100%; max-width:460px; border-color:var(--ok); color:var(--ok-ink); background:var(--ok-soft);}
   #noteClearBtn{display:none;}
-  .side-row.two #noteCount{display:block;}
+  .side-row.two #noteCount, .side-row.two #todayCount{display:block;}
   .lv-btns{display:flex; flex-direction:column; gap:3px; width:86%; margin:3px auto 0;}
   .lv-btns .lv-btn{width:100%; margin:0; padding:2px 0; font-size:10px; line-height:1.25; border-width:1.5px; border-radius:5px;}
   .lv-btns .lv-btn[data-act=clear]{border-color:#9cc7ef; color:#2f6d9e; background:#f3f9ff;}
   th.lv-header{height:auto !important; padding:3px 2px !important;}
   .side-btn{font-size:15px; white-space:nowrap;}
-  .side-row.two .report-open{flex:1 1 0; min-width:0; padding:9px 4px; font-size:13px; line-height:1.3;}
+  .side-row.two .report-open{flex:1 1 0; min-width:0; padding:9px 2px; font-size:12px; line-height:1.3; white-space:nowrap; letter-spacing:0;}
   .heat-legend{font-size:11.5px; color:var(--ink-soft); padding:0 4px 5px; display:flex; align-items:center; flex-wrap:wrap; gap:2px 5px;}
   .heat-legend .hl-blue{color:#2b95d6; font-weight:700;} .heat-legend .hl-red{color:#d7263d; font-weight:700;}
   .heat-legend .hl-bar{display:inline-block; width:46px; height:8px; border-radius:99px; background:linear-gradient(90deg,#2b95d6,#d7263d);}
@@ -287,9 +287,9 @@
     .action-section .opt-title{flex:0 0 4.7em; margin:0; font-size:13px; line-height:1.15;}
     .action-section .opt-title small{display:block; font-size:9.5px; font-weight:700; opacity:.8;}
     .action-section .seg{flex:1; flex-wrap:nowrap;}
-    .action-section .seg label{padding:7px 2px; font-size:13.5px; text-align:center;}
+    .action-section .seg label{padding:3.5px 2px; font-size:13.5px; text-align:center;}
     .side-row.two .report-open{white-space:nowrap; font-size:12.5px;}
-    .side-row.two #noteCount{font-size:11px;}
+    .side-row.two #noteCount, .side-row.two #todayCount{font-size:11px;}
     .pc-only{display:none;} .sp-only{display:inline;}
     .side-btn{height:42px; font-size:15px;}
     .setting-section{grid-row:auto;}
@@ -479,16 +479,12 @@
       </div>
       <div class="pool-info" id="poolInfo"></div>
       <button type="button" class="make-btn round" id="btnGo">テスト開始！</button>
+      <button type="button" class="report-open" id="btnReport">📋 報告用まとめ</button>
       <div class="side-row two">
-        <button type="button" class="report-open" id="btnReport">📋 今日のテストまとめ</button>
-        <button type="button" class="report-open note-open" id="btnNote">📒 自分のまちがいリスト<span id="noteCount"></span></button>
+        <button type="button" class="report-open note-open" id="btnNote">📒 まちがいリスト<span id="todayCount"></span></button>
+        <button type="button" class="report-open note-open" id="btnNoteAll">📚 これまでリスト<span id="noteCount"></span></button>
       </div>
       <button type="button" class="install-open" id="btnInstall" hidden>📲 スマホのホーム画面に追加</button>
-      <div class="note">
-        ※レベル１＝重要度２以上／レベル２＝重要度１<br>／レベル３＝その時代の全問題<br>
-        ※まちがえた問題は□に✓→自分のまちがいリストに記録<br>
-        ※制限時間は「1問あたり」の秒数
-      </div>
     </div>
 
     <div class="setting-section">
@@ -532,7 +528,7 @@
       <button type="button" class="btn primary" id="retryWrongBtn">間違い直し</button>
       <button type="button" class="btn" id="retryBtn">同じ範囲で再チャレンジ</button>
       <button type="button" class="btn" id="backBtn">トップにもどる</button>
-      <button type="button" class="btn" id="toReportBtn">今日のまとめ</button>
+      <button type="button" class="btn" id="toReportBtn">報告用まとめ</button>
     </div>
   </div>
   <div class="sheet-bar" id="barAnswering">
@@ -557,9 +553,9 @@
 <section id="screen-note" hidden>
   <div class="shell wide">
     <div class="card">
-      <h2 class="rep-title">📒 自分のまちがいリスト</h2>
+      <h2 class="rep-title" id="noteTitle">📒 まちがいリスト</h2>
       <div class="note-tabs" role="tablist" aria-label="リストの切りかえ">
-        <button type="button" role="tab" id="tabToday" data-tab="today" aria-selected="true">今日のリスト<small id="tabTodayN"></small></button>
+        <button type="button" role="tab" id="tabToday" data-tab="today" aria-selected="true">まちがいリスト（今日）<small id="tabTodayN"></small></button>
         <button type="button" role="tab" id="tabAll" data-tab="all" aria-selected="false">これまでリスト<small id="tabAllN"></small></button>
       </div>
       <p class="rep-hint" id="noteHint"></p>
@@ -947,6 +943,7 @@ function applyNote(){
 function updNoteCount(){
   const n = Object.keys(loadNote()).filter(k => BY_KEY[k]).length;
   $('noteCount').textContent = n ? `（${n}問）` : '';
+  const tn = todayItems().length; $('todayCount').textContent = tn ? `（今日${tn}問）` : '（今日）';
   paintEraHeat();
 }
 // 時代名の色：水色（ミスなし）→赤（自分のまちがいリストのミス回数が多い時代）
@@ -1021,13 +1018,14 @@ function openNote(keepScroll){
   const allItems = noteItems(), tItems = todayItems();
   if(!noteTab) noteTab = tItems.length ? 'today' : 'all';
   const isToday = noteTab === 'today';
+  $('noteTitle').textContent = isToday ? '📒 まちがいリスト（今日の分）' : '📚 これまでリスト';
   $('tabTodayN').textContent = `（${tItems.length}問）`;
   $('tabAllN').textContent = `（${allItems.length}問）`;
   ['tabToday', 'tabAll'].forEach(id => $(id).setAttribute('aria-selected', $(id).dataset.tab === noteTab));
   $('noteHint').textContent = isToday
     ? '今日のテストで✓をつけた問題です。まちがえた回数の多い順にならびます。'
     : 'これまでに✓をつけた問題が、この端末に記録されています。まちがえた回数ランキング順にならびます。3回続けて正解したら「覚えた！」で消しましょう。';
-  $('noteTestBtn').textContent = isToday ? '今日のリストからテスト' : 'これまでリストからテスト';
+  $('noteTestBtn').textContent = isToday ? 'まちがいリストからテスト' : 'これまでリストからテスト';
   $('noteClearBtn').parentNode.hidden = isToday;
   const items = (isToday ? tItems : allItems);
   // ランキング（同じ回数は同じ順位）
@@ -1125,7 +1123,8 @@ function openNote(keepScroll){
 }
 ['tabToday', 'tabAll'].forEach(id => $(id).addEventListener('click', () => { noteTab = $(id).dataset.tab; openNote(true); }));
 let lastCleared = null;
-$('btnNote').addEventListener('click', () => { lastCleared = null; noteTab = null; openNote(); });
+$('btnNote').addEventListener('click', () => { lastCleared = null; noteTab = 'today'; openNote(); });
+$('btnNoteAll').addEventListener('click', () => { lastCleared = null; noteTab = 'all'; openNote(); });
 $('noteBackBtn').addEventListener('click', () => { show('setup'); updatePoolInfo(); });
 $('noteTestBtn').addEventListener('click', () => {
   const items = noteTab === 'today' ? todayItems() : noteItems();
